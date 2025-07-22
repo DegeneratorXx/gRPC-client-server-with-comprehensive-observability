@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    container_name: jaeger
+    ports:
+      - "16686:16686"     # Jaeger UI (http://localhost:16686)
+      - "4317:4317"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.101.0
+    container_name: otel-collector
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    ports:
+      - "4319:4319"        # OTLP gRPC endpoint for apps
+      - "8888:8888"        # Collector metrics (Prometheus scrape)
+      - "8889:8889"        # App metrics (Prometheus scrape)
+    depends_on:
+      - jaeger
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    ports:
+      - "9090:9090"        # Prometheus UI (http://localhost:9090)
+
+  grpc-server:
+    build:
+      context: ./grpc-server
+    container_name: grpc-server
+    ports:
+      - "50051:50051"      # gRPC server
+    depends_on:
+      - otel-collector
+
+  grpc-client:
+    build:
+      context: ./grpc-client
+    container_name: grpc-client
+    depends_on:
+      - grpc-server
+      - otel-collector
+

@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.example.generated";
+option java_outer_classname = "UserServiceProto";
+
+service UserService {
+  rpc getOrCreateUser(GetOrCreateUserRequest) returns (GetOrCreateUserResponse);
+  rpc getUserData(GetUserDataRequest) returns (GetUserDataResponse);
+//  rpc checkIsNewUser(checkIsNewUserRequest) returns (checkIsNewUserResponse);
+}
+
+// can be implemented for further clarity
+//
+//message checkIsNewUserRequest{
+//  int64 userId=1;
+//}
+//
+//message checkIsNewUserResponse{
+//  bool isNewUser=1;
+//}
+
+message GetOrCreateUserRequest {
+  int64 userId = 1;
+  string mobileNumber = 2;
+}
+
+message GetOrCreateUserResponse {
+  bool isNewUser = 1;
+}
+
+message GetUserDataRequest {
+  int64 userId = 1;
+}
+
+message GetUserDataResponse {
+  string mobileNumber = 1;
+}

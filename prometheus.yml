@@ -11,3 +11,5 @@ scrape_configs:
     static_configs:
       # Target the otel-collector service by its name, and its exposed internal metrics port
       - targets: ['otel-collector:8888']
+
+

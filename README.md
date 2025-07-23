@@ -18,6 +18,7 @@
 * [8-Viewing Observability Data](#viewing-observability-data)
     * [Jaeger UI (Traces)](#jaeger-ui-traces)
     * [Prometheus UI (Metrics)](#prometheus-ui-metrics)
+    * [Signoz Cloud](#signoz-cloud-ui-traces--metrics)
 
 
 ---
@@ -209,6 +210,28 @@ In the Prometheus UI:
 2.  Verify that `otel-collector-app-metrics` and `otel-collector-self-metrics` (or similar names based on your `prometheus.yml`) are listed as `UP`. This confirms Prometheus is successfully scraping metrics from the OpenTelemetry Collector.
 3.  Go to the "Graph" page. You can now query for metrics emitted by your services, e.g., `process_cpu_usage` (from the collector's own metrics) or specific application metrics you've defined within your gRPC apps.
 
+### SigNoz Cloud UI (Traces & Metrics)
+
+SigNoz Cloud provides a hosted observability platform that lets you view, query, and analyze both **traces** and **metrics** from your applications.
+
+You can log in to your SigNoz Cloud workspace at:  [Signoz cloud](https://signoz.io/cloud)
+
+From the left navigation menu, you can:
+- View **Traces**: Distributed traces captured from your services.
+- Explore **Metrics**: Prometheus-compatible metrics, with proportional and time-series views.
+- Check **Logs**: Centralized application and infrastructure logs.
+- Create dashboards, alerts, and explore service dependencies.
+
+In order to connect with Signoz cloud you need to set ingestion key in the otel-config file,which you can get on your signoz account's setting
+````
+exporters:
+  otlphttp/signoz:                                         # Giving it a unique name
+    endpoint: "https://ingest.us.signoz.cloud:443"
+    headers:
+      "signoz-access-token": "${env:SIGNOZ_ACCESS_TOKEN}"  # Saved creds in env file
+    tls:
+      insecure: false
+````
 
 -----
 

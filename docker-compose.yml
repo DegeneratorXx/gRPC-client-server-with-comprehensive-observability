@@ -7,20 +7,25 @@ services:
     container_name: jaeger
     ports:
       - "16686:16686"     # Jaeger UI (http://localhost:16686)
-      - "4317:4317"
+      - "4317:4317"       # Jaeger's OTLP HTTP port, also for legacy Thrift
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.101.0
     container_name: otel-collector
     volumes:
       - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+      # ADDED: Mount host's CA certs into the container for SigNoz Cloud TLS
+      - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro # <--- IMPORTANT: Use correct host path!
     command: ["--config=/etc/otelcol-contrib/config.yaml"]
     ports:
-      - "4319:4319"        # OTLP gRPC endpoint for apps
-      - "8888:8888"        # Collector metrics (Prometheus scrape)
-      - "8889:8889"        # App metrics (Prometheus scrape)
+      - "4319:4319"        # OTLP gRPC endpoint for apps to send to collector
+      - "8888:8888"        # Collector's own metrics (Prometheus scrape)
+      - "8889:8889"        # Collector's exposed Prometheus metrics (for local Prometheus to scrape)
     depends_on:
-      - jaeger
+      - jaeger # Existing dependency
+      - prometheus # Added back for clarity, though Prometheus depends on collector
+    environment:
+      - SIGNOZ_ACCESS_TOKEN=${SIGNOZ_ACCESS_TOKEN}
 
   prometheus:
     image: prom/prometheus:v2.55.1
@@ -31,6 +36,7 @@ services:
       - "--config.file=/etc/prometheus/prometheus.yml"
     ports:
       - "9090:9090"        # Prometheus UI (http://localhost:9090)
+
 
   grpc-server:
     build:
@@ -48,4 +54,3 @@ services:
     depends_on:
       - grpc-server
       - otel-collector
-

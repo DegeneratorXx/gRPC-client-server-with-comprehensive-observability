@@ -5,24 +5,46 @@ receivers:
         endpoint: "0.0.0.0:4319"
       http:
 
+  prometheus/self:
+    config:
+      scrape_configs:
+        - job_name: 'otel-collector-self'
+          scrape_interval: 15s
+          static_configs:
+            # The collector scrapes its own exposed metrics endpoint
+            - targets: [ '0.0.0.0:8888' ]
+          metrics_path: /metrics # Default path for collector's own metrics
+
+
 processors:
   batch:
+    # Add common batch processor settings if they were missing in your 'old config'
+    send_batch_size: 1000
+    timeout: 10s
 
 exporters:
-  otlp:
-    endpoint: "jaeger:4317"  # send traces to jaeger inside docker network
+  otlp: # Existing Jaeger exporter (note: name is 'otlp' but refers to Jaeger)
+    endpoint: "jaeger:4317" # Changed to 14250, Jaeger's gRPC collector port
     tls:
       insecure: true
-  prometheus:
+  prometheus: # Existing Prometheus exporter (from OTel Collector to local Prometheus)
     endpoint: "0.0.0.0:8889" # expose metrics to Prometheus
+
+  # ADDED: SigNoz Cloud OTLP HTTP Exporter
+  otlphttp/signoz: # Giving it a unique name
+    endpoint: "https://ingest.us.signoz.cloud:443"
+    headers:
+      "signoz-access-token": "${env:SIGNOZ_ACCESS_TOKEN}"
+    tls:
+      insecure: false
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp]
+      exporters: [otlp, otlphttp/signoz] # MODIFIED: Export to Jaeger (otlp) AND SigNoz
     metrics:
-      receivers: [otlp]
+      receivers: [otlp,prometheus/self]
       processors: [batch]
-      exporters: [prometheus]
+      exporters: [prometheus, otlphttp/signoz] # MODIFIED: Export to local Prometheus AND SigNoz
